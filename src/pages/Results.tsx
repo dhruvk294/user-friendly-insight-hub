@@ -9,7 +9,7 @@ import { HeartIcon } from "@/components/ui/heart-icon";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { AlertCircle, ArrowRight, CheckCircle2 } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle2, Database } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { 
@@ -18,20 +18,32 @@ import {
   FormData as HeartFormData 
 } from "@/lib/heart-disease-utils";
 import { savePrediction } from "@/lib/api-mock";
+import { savePredictionToSupabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function Results() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [result, setResult] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saved, setSaved] = useState<boolean>(false);
   
   useEffect(() => {
+    // If we have a saved result from history, use it directly
+    if (location.state?.savedResult) {
+      setResult(location.state.savedResult);
+      setSaved(true);
+      return;
+    }
+
     // If formData is not provided, redirect to the prediction page
     if (!location.state?.formData) {
       navigate("/predict");
       return;
     }
     
-    // Call our API mock
+    // Call our API mock for new predictions
     const fetchPrediction = async () => {
       try {
         const prediction = await savePrediction(location.state.formData as HeartFormData);
@@ -44,6 +56,34 @@ export default function Results() {
     
     fetchPrediction();
   }, [location.state, navigate]);
+  
+  // Save prediction to Supabase
+  const handleSaveToDatabase = async () => {
+    if (!result || !location.state?.formData) return;
+    
+    try {
+      setIsSaving(true);
+      await savePredictionToSupabase({
+        formData: location.state.formData,
+        ...result
+      });
+      setSaved(true);
+      toast({
+        title: "Prediction saved",
+        description: "Your prediction has been saved to your history.",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error("Error saving prediction:", error);
+      toast({
+        title: "Error saving prediction",
+        description: "Failed to save prediction to database.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
   
   // Format risk factors for chart
   const chartData = result?.riskFactors.map((factor: any) => ({
@@ -133,13 +173,31 @@ export default function Results() {
                     </p>
                     
                     <div className="flex flex-col sm:flex-row gap-4">
+                      {!saved && (
+                        <Button 
+                          onClick={handleSaveToDatabase} 
+                          disabled={isSaving || saved}
+                          className="gap-2"
+                        >
+                          {isSaving ? <LoadingSpinner size="sm" /> : <Database className="h-4 w-4" />}
+                          Save to History
+                        </Button>
+                      )}
+                      
+                      <Button asChild variant={saved ? "default" : "outline"}>
+                        <Link to="/history">
+                          View History
+                        </Link>
+                      </Button>
+                      
                       <Button asChild variant="outline">
                         <Link to="/predict">
                           Try Again
                         </Link>
                       </Button>
+                      
                       {result.prediction === 1 && (
-                        <Button asChild>
+                        <Button asChild variant="outline">
                           <a href="https://www.heart.org/en/health-topics/heart-attack/warning-signs-of-a-heart-attack" target="_blank" rel="noopener noreferrer">
                             Heart Health Resources <ArrowRight className="ml-2 h-4 w-4" />
                           </a>
