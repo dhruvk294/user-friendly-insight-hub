@@ -99,3 +99,54 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .animate-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-lg;
+  }
+
+  .heart-beat {
+    animation: heartBeat 2s infinite;
+  }
+
+  .hero-gradient {
+    background: linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%);
+  }
+
+  .input-gradient {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heartBeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.1);
+  }
+  30% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.05);
+  }
+  60% {
+    transform: scale(1);
+  }
+}

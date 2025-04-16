@@ -52,6 +52,13 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				healthy: '#4ade80',
+				risk: '#f87171',
+				medical: {
+					light: '#60a5fa',
+					DEFAULT: '#3b82f6',
+					dark: '#2563eb',
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
