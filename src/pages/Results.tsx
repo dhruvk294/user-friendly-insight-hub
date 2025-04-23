@@ -6,6 +6,7 @@ import { Footer } from "@/components/footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { HeartIcon } from "@/components/ui/heart-icon";
+import { Button } from "@/components/ui/button";
 import { FormData as HeartFormData } from "@/lib/heart-disease-utils";
 import { savePrediction } from "@/lib/api-mock";
 import { savePredictionToSupabase } from "@/integrations/supabase/client";
@@ -20,11 +21,14 @@ export default function Results() {
   const [result, setResult] = useState<any>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saved, setSaved] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     if (location.state?.savedResult) {
       setResult(location.state.savedResult);
       setSaved(true);
+      setIsLoading(false);
       return;
     }
 
@@ -35,10 +39,14 @@ export default function Results() {
     
     const fetchPrediction = async () => {
       try {
+        setIsLoading(true);
         const prediction = await savePrediction(location.state.formData as HeartFormData);
         setResult(prediction);
+        setIsLoading(false);
       } catch (error) {
         console.error("Error getting prediction:", error);
+        setError("Failed to get prediction. Please try again.");
+        setIsLoading(false);
       }
     };
     
@@ -80,18 +88,29 @@ export default function Results() {
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold tracking-tight">Your Heart Disease Risk Assessment</h1>
             <p className="text-muted-foreground mt-2">
-              Based on the health data you provided
+              {isLoading ? "Processing your data with ML model..." : "Based on the health data you provided"}
             </p>
           </div>
           
-          {!result ? (
+          {isLoading ? (
             <Card className="glass-card animate-in">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <div className="flex flex-col items-center space-y-4">
                   <LoadingSpinner size="lg" />
                   <HeartIcon className="h-16 w-16 text-medical/50" beating />
-                  <p className="text-lg text-muted-foreground">Analyzing your health data...</p>
+                  <p className="text-lg text-muted-foreground">Analyzing your health data with our ML model...</p>
                   <p className="text-sm text-muted-foreground">This may take a few moments</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : error ? (
+            <Card className="glass-card animate-in">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="flex flex-col items-center space-y-4">
+                  <p className="text-lg text-destructive">{error}</p>
+                  <Button onClick={() => navigate("/predict")} variant="outline">
+                    Try Again
+                  </Button>
                 </div>
               </CardContent>
             </Card>

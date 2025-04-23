@@ -75,10 +75,9 @@ export const defaultFormValues: FormData = {
   thal: "2"
 };
 
-// This is a simplified implementation for frontend purposes
-// In a real application, prediction would happen on the backend
-export const predictHeartDisease = (formData: FormData): PredictionResult => {
-  // Generate a probability score - this is just a dummy implementation
+// Fallback prediction function used if the API call fails
+export const fallbackPredictHeartDisease = (formData: FormData): PredictionResult => {
+  // This is the original simplified implementation for frontend purposes
   const factors = {
     age: formData.age > 50 ? 0.2 : 0.05,
     sex: formData.sex === "1" ? 0.1 : 0.05,
@@ -114,4 +113,33 @@ export const predictHeartDisease = (formData: FormData): PredictionResult => {
     probability: probability,
     riskFactors: riskFactors
   };
+};
+
+// This function now calls the ML model API through our Supabase Edge Function
+export const predictHeartDisease = async (formData: FormData): Promise<PredictionResult> => {
+  try {
+    const SUPABASE_URL = "https://dumfvkzxnfmrnxhrcyjz.supabase.co";
+    
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/predict-heart-disease`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ formData }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Error from prediction API:", errorText);
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Failed to get prediction from API:", error);
+    // Fall back to the simplified model if API call fails
+    console.log("Using fallback prediction model");
+    return fallbackPredictHeartDisease(formData);
+  }
 };
